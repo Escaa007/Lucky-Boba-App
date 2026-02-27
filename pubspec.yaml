@@ -1,0 +1,49 @@
+name: luckyboba_app
+description: "A new Flutter project for Lucky Boba."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  font_awesome_flutter: ^10.7.0
+  google_fonts: ^6.2.1
+  url_launcher: ^6.3.0
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  video_player: ^2.8.2
+  geolocator: ^13.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/videos/landingvideo.mp4
+    # --- Menu Category Assets ---
+    - assets/menu/cheese-cake/
+    - assets/menu/coffee-frappe/
+    - assets/menu/cream-cheese/
+    - assets/menu/flavored-pearl/
+    - assets/menu/foods/
+    - assets/menu/frappes/
+    - assets/menu/fruit-soda/
+    - assets/menu/fruit-tea/
+    - assets/menu/hot-drinks/
+    - assets/menu/iced-coffee/
+    - assets/menu/iced-latte/
+    - assets/menu/lucky-classic/
+    - assets/menu/nova/
+    - assets/menu/okinawa-brown-sugar/
+    - assets/menu/rocksalt&cheese/
+    - assets/menu/yakult/
