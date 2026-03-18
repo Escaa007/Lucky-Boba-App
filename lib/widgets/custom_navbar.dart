@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class CustomNavBar extends StatelessWidget {
   final int selectedIndex;
@@ -13,83 +12,65 @@ class CustomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color darkVioletNav = const Color(0xFF3B2063);
-    final Color lightLavenderPill = const Color(0xFFD0BCFF);
+    final Color deepPurple = const Color(0xFF3B2063);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: darkVioletNav,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>(
-                  (Set<WidgetState> states) {
-                if (states.contains(WidgetState.selected)) {
-                  return GoogleFonts.fredoka(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  );
-                }
-                return GoogleFonts.fredoka(color: Colors.white70, fontSize: 11);
-              },
-            ),
-            iconTheme: WidgetStateProperty.resolveWith<IconThemeData>(
-                  (Set<WidgetState> states) {
-                if (states.contains(WidgetState.selected)) {
-                  return const IconThemeData(size: 32, color: Color(0xFF3B2063));
-                }
-                return const IconThemeData(size: 28, color: Colors.white70);
-              },
-            ),
-          ),
-          child: NavigationBar(
-            height: 80,
-            backgroundColor: darkVioletNav,
-            indicatorColor: lightLavenderPill,
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onTabChange,
-            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.storefront_outlined),
-                selectedIcon: Icon(Icons.storefront_rounded),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.local_drink_outlined),
-                selectedIcon: Icon(Icons.local_drink_rounded),
-                label: 'Order',
-              ),
-              // --- CHANGED TO CARDS ---
-              NavigationDestination(
-                icon: Icon(Icons.credit_card_outlined),
-                selectedIcon: Icon(Icons.credit_card_rounded),
-                label: 'Cards',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.map_outlined),
-                selectedIcon: Icon(Icons.map_rounded),
-                label: 'Stores',
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 40, right: 40, bottom: 20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(35),
+            boxShadow: [
+              BoxShadow(
+                color: deepPurple.withValues(alpha: 0.15),
+                blurRadius: 20,
+                spreadRadius: 5,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildNavItem(index: 0, icon: Icons.storefront_rounded, deepPurple: deepPurple),
+              _buildNavItem(index: 1, icon: Icons.local_drink_rounded, deepPurple: deepPurple),
+              _buildNavItem(index: 2, icon: Icons.credit_card_rounded, deepPurple: deepPurple),
+              _buildNavItem(index: 3, icon: Icons.map_rounded, deepPurple: deepPurple),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required Color deepPurple,
+  }) {
+    bool isSelected = selectedIndex == index;
+
+    return GestureDetector(
+      onTap: () => onTabChange(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        width: 55,
+        height: 55,
+        decoration: BoxDecoration(
+          color: isSelected ? deepPurple : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: isSelected
+              ? null
+              : Border.all(color: deepPurple.withValues(alpha: 0.2), width: 1.5),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? Colors.white : deepPurple.withValues(alpha: 0.6),
+          size: 26,
         ),
       ),
     );

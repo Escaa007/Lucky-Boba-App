@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'pages/LandingPromoPage.dart';
-import 'main.dart'; // Assuming this is where LoginPage is
+import 'package:shared_preferences/shared_preferences.dart';
+import 'pages/landing_promo_page.dart';
+import 'main.dart';
 
 class TermsPage extends StatelessWidget {
   const TermsPage({super.key});
 
-  // --- COLORS (Synced with Navbar) ---
   final Color creamVioletBg = const Color(0xFFE8DEF8);
   final Color darkVioletNav = const Color(0xFF3B2063);
 
@@ -21,40 +21,42 @@ class TermsPage extends StatelessWidget {
             child: Card(
               elevation: 8,
               color: Colors.white,
-              shadowColor: darkVioletNav.withOpacity(0.2),
+              shadowColor: darkVioletNav.withValues(alpha: 0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // --- 1. REPLACED GAVEL WITH LOGO ---
                     Image.asset(
                       'assets/images/logo.png',
                       height: 60,
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.gavel_rounded, size: 50, color: darkVioletNav),
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.gavel_rounded,
+                          size: 50,
+                          color: darkVioletNav),
                     ),
                     const SizedBox(height: 15),
 
                     Text(
                       'TERMS OF USE',
                       style: GoogleFonts.fredoka(
-                        color: darkVioletNav,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
+                        color:         darkVioletNav,
+                        fontSize:      20,
+                        fontWeight:    FontWeight.w600,
                         letterSpacing: 1.5,
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    // --- 2. FIXED SCROLLBAR MARGIN ---
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color:        Colors.grey[50],
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.grey[200]!),
                         ),
@@ -68,8 +70,8 @@ class TermsPage extends StatelessWidget {
                                 _mockTermsData,
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
-                                  height: 1.6,
-                                  color: Colors.black87,
+                                  height:   1.6,
+                                  color:    Colors.black87,
                                 ),
                                 textAlign: TextAlign.justify,
                               ),
@@ -81,7 +83,6 @@ class TermsPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // --- BUTTONS ---
                     Row(
                       children: [
                         Expanded(
@@ -89,13 +90,15 @@ class TermsPage extends StatelessWidget {
                             onPressed: () {
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (context) => const LoginPage()),
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                    const LoginPage()),
                               );
                             },
                             child: Text(
                               "DECLINE",
                               style: GoogleFonts.poppins(
-                                color: Colors.grey[600],
+                                color:      Colors.grey[600],
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -105,17 +108,37 @@ class TermsPage extends StatelessWidget {
 
                         Expanded(
                           child: ElevatedButton(
-                            // --- UPDATED NAVIGATION HERE ---
-                            onPressed: () {
+                            onPressed: () async {
+                              final prefs =
+                              await SharedPreferences.getInstance();
+
+                              // ✅ Support both int (Laravel) and
+                              //    String (Firebase) user IDs
+                              final int?    userId    = prefs.getInt('user_id');
+                              final String? userIdStr = prefs.getString('user_id_str');
+
+                              // Use whichever is available
+                              final String userKey =
+                                  userId?.toString() ?? userIdStr ?? '';
+
+                              if (userKey.isNotEmpty) {
+                                await prefs.setBool(
+                                    'has_accepted_terms_$userKey', true);
+                              }
+
+                              if (!context.mounted) return;
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (context) => const LandingPromoPage()), // <-- Changed this!
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                    const LandingPromoPage()),
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: darkVioletNav,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding:         const EdgeInsets.symmetric(
+                                  vertical: 16),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
@@ -123,7 +146,9 @@ class TermsPage extends StatelessWidget {
                             ),
                             child: Text(
                               "I ACCEPT",
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, letterSpacing: 1),
+                              style: GoogleFonts.poppins(
+                                  fontWeight:    FontWeight.bold,
+                                  letterSpacing: 1),
                             ),
                           ),
                         ),

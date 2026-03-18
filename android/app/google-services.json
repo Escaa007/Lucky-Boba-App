@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "822257671635",
+    "project_id": "luckyboba-app",
+    "storage_bucket": "luckyboba-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:822257671635:android:0777c0f8c09b273dd5e326",
+        "android_client_info": {
+          "package_name": "com.example.luckyboba_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDthqZboz-V159d9cd0x65Aq862Qej4hvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

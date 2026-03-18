@@ -1,9 +1,10 @@
+// FILE: lib/pages/cart_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'checkout_page.dart'; // <--- THIS LINKS TO YOUR CHECKOUT PAGE
+import 'checkout_page.dart';
 
-// --- GLOBAL CART VARIABLE (For Prototyping) ---
-// This list will hold all the items added to the cart across the app.
+// ── Global cart state ────────────────────────────────────────────────────────
+// Cart is managed locally — no API call needed until checkout
 List<Map<String, dynamic>> myCart = [];
 
 class CartPage extends StatefulWidget {
@@ -14,150 +15,233 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  final Color deepPurple = const Color(0xFF3B2063);
-  final Color lightPurple = const Color(0xFFE8DEF8);
-  final Color backgroundCream = const Color(0xFFFDFDFD);
+  static const Color _purple   = Color(0xFF7C14D4);
+  static const Color _orange   = Color(0xFFFF8C00);
+  static const Color _bg       = Color(0xFFFAFAFA);
+  static const Color _surface  = Color(0xFFF2EEF8);
+  static const Color _textDark = Color(0xFF1A1A2E);
+  static const Color _textMid  = Color(0xFF6B6B8A);
 
-  // Calculates the total price of everything in the cart
-  double get cartTotal {
-    double total = 0;
-    for (var item in myCart) {
-      total += item['totalPrice'];
-    }
-    return total;
-  }
+  // ── Cart total ───────────────────────────────────────────────────────────
+  double get cartTotal => myCart.fold(0, (sum, item) {
+    final p = item['totalPrice'];
+    if (p is double) return sum + p;
+    if (p is int) return sum + p.toDouble();
+    return sum + (double.tryParse(p?.toString() ?? '0') ?? 0.0);
+  });
 
   void _updateQuantity(int index, int delta) {
     setState(() {
-      int currentQty = myCart[index]['quantity'];
-      if (currentQty + delta > 0) {
-        myCart[index]['quantity'] += delta;
-        // Update the total price for this specific item row
-        myCart[index]['totalPrice'] = myCart[index]['unitPrice'] * myCart[index]['quantity'];
+      final current = myCart[index]['quantity'] as int;
+      if (current + delta > 0) {
+        myCart[index]['quantity']   = current + delta;
+        myCart[index]['totalPrice'] =
+            myCart[index]['unitPrice'] * myCart[index]['quantity'];
       } else {
-        // Remove item if quantity hits 0
         myCart.removeAt(index);
       }
     });
   }
 
+  void _showClearCartDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18)),
+        title: Text('Clear Cart',
+            style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700, color: _textDark)),
+        content: Text('Remove all items from your cart?',
+            style: GoogleFonts.poppins(fontSize: 13, color: _textMid)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: GoogleFonts.poppins(
+                    color: _textMid, fontWeight: FontWeight.w600)),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() => myCart.clear());
+              Navigator.pop(context);
+            },
+            child: Text('Clear',
+                style: GoogleFonts.poppins(
+                    color: Colors.red, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundCream,
+      backgroundColor: _bg,
       body: SafeArea(
         child: Column(
           children: [
-            // --- TOP HEADER ---
+
+            // ── APP BAR ──────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
-                    onPressed: () => Navigator.pop(context),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width:  40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                          color: _surface, shape: BoxShape.circle),
+                      child: const Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 18, color: _purple),
+                    ),
                   ),
-                  Text(
-                    "My Cart",
-                    style: GoogleFonts.fredoka(fontSize: 22, fontWeight: FontWeight.w600),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('My Cart',
+                            style: GoogleFonts.poppins(
+                              fontSize:   18,
+                              fontWeight: FontWeight.w700,
+                              color:      _textDark,
+                            )),
+                        Text(
+                          myCart.isEmpty
+                              ? 'No items yet'
+                              : '${myCart.length} item${myCart.length > 1 ? 's' : ''} in cart',
+                          style: GoogleFonts.poppins(
+                            fontSize:   12,
+                            color:      _textMid,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 48), // Spacer to center the title
+                  if (myCart.isNotEmpty)
+                    GestureDetector(
+                      onTap: _showClearCartDialog,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                          Border.all(color: Colors.red.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          'Clear all',
+                          style: GoogleFonts.poppins(
+                            fontSize:   12,
+                            fontWeight: FontWeight.w600,
+                            color:      Colors.red[400],
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
 
-            // --- CART ITEMS LIST ---
+            // ── CART ITEMS ───────────────────────────────────────────────
             Expanded(
               child: myCart.isEmpty
-                  ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey[300]),
-                    const SizedBox(height: 15),
-                    Text(
-                      "Your cart is empty",
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: deepPurple,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      ),
-                      child: Text("Browse Menu", style: GoogleFonts.poppins(color: Colors.white)),
-                    )
-                  ],
-                ),
-              )
+                  ? _buildEmptyCart()
                   : ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.all(20),
-                itemCount: myCart.length,
-                itemBuilder: (context, index) {
-                  final item = myCart[index];
-                  return _buildCartItemCard(item, index);
-                },
+                physics:     const BouncingScrollPhysics(),
+                padding:     const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                itemCount:   myCart.length,
+                itemBuilder: (context, index) =>
+                    _buildCartItemCard(myCart[index], index),
               ),
             ),
 
-            // --- CHECKOUT BOTTOM BAR ---
+            // ── CHECKOUT BOTTOM BAR ──────────────────────────────────────
             if (myCart.isNotEmpty)
               Container(
-                padding: const EdgeInsets.all(25),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
                 decoration: BoxDecoration(
                   color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24)),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
+                    BoxShadow(
+                      color:      Colors.black.withOpacity(0.07),
+                      blurRadius: 16,
+                      offset:     const Offset(0, -4),
+                    ),
                   ],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Subtotal Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Subtotal", style: GoogleFonts.poppins(fontSize: 15, color: Colors.grey[600])),
-                        Text("₱${cartTotal.toStringAsFixed(2)}", style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Total Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Total", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('Subtotal',
+                            style: GoogleFonts.poppins(
+                                fontSize: 13, color: _textMid)),
                         Text(
-                          "₱${cartTotal.toStringAsFixed(2)}",
-                          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: deepPurple),
+                          '₱${cartTotal.toStringAsFixed(2)}',
+                          style: GoogleFonts.poppins(
+                              fontSize:   13,
+                              fontWeight: FontWeight.w600,
+                              color:      _textDark),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // --- FIXED CHECKOUT BUTTON ---
+                    const SizedBox(height: 6),
+                    const Divider(color: Color(0xFFEAEAF0)),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Total',
+                            style: GoogleFonts.poppins(
+                              fontSize:   16,
+                              fontWeight: FontWeight.w700,
+                              color:      _textDark,
+                            )),
+                        Text(
+                          '₱${cartTotal.toStringAsFixed(2)}',
+                          style: GoogleFonts.poppins(
+                            fontSize:   22,
+                            fontWeight: FontWeight.w800,
+                            color:      _purple,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // This is the code that opens your checkout page!
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const CheckoutPage()),
-                          );
-                        },
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const CheckoutPage()),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: deepPurple,
+                          backgroundColor: _purple,
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0,
                         ),
                         child: Text(
-                          "Checkout",
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                          'Proceed to Checkout',
+                          style: GoogleFonts.poppins(
+                            fontSize:   15,
+                            fontWeight: FontWeight.w700,
+                            color:      Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -170,102 +254,251 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  // --- CART ITEM WIDGET ---
+  // ── Empty state ───────────────────────────────────────────────────────────
+  Widget _buildEmptyCart() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width:  100,
+            height: 100,
+            decoration: const BoxDecoration(
+                color: _surface, shape: BoxShape.circle),
+            child: const Icon(Icons.shopping_basket_outlined,
+                size: 48, color: _purple),
+          ),
+          const SizedBox(height: 20),
+          Text('Your cart is empty',
+              style: GoogleFonts.poppins(
+                fontSize:   18,
+                fontWeight: FontWeight.w700,
+                color:      _textDark,
+              )),
+          const SizedBox(height: 8),
+          Text(
+            'Add some items from the menu\nto get started',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 13, color: _textMid),
+          ),
+          const SizedBox(height: 28),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _purple,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 28, vertical: 14),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+            child: Text('Browse Menu',
+                style: GoogleFonts.poppins(
+                  fontSize:   14,
+                  fontWeight: FontWeight.w700,
+                  color:      Colors.white,
+                )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Cart item card ────────────────────────────────────────────────────────
   Widget _buildCartItemCard(Map<String, dynamic> item, int index) {
-    // Convert the toppings list into a single comma-separated string
-    String toppingsString = (item['toppings'] as List).isEmpty
-        ? "No toppings"
-        : (item['toppings'] as List).join(", ");
+    final String  name     = item['name']  ?? 'Item';
+    final String  size     = item['size']  ?? '';
+    final String? image    = item['image']?.toString();
+    final int     quantity = item['quantity'] as int? ?? 1;
+
+    final List addOns = (item['toppings'] as List?)?.isNotEmpty == true
+        ? item['toppings'] as List
+        : (item['add_ons'] as List?)?.isNotEmpty == true
+        ? item['add_ons'] as List
+        : [];
+
+    final String addOnsText =
+    addOns.isEmpty ? 'No add-ons' : addOns.join(', ');
+
+    final double totalPrice = () {
+      final p = item['totalPrice'];
+      if (p is double) return p;
+      if (p is int) return p.toDouble();
+      return double.tryParse(p?.toString() ?? '0') ?? 0.0;
+    }();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(12),
+      margin:  const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        color:        Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFEAEAF0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color:      Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset:     const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Item Image
+          // ── IMAGE ────────────────────────────────────────────────────
           ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.asset(
-              item['image'],
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
+            borderRadius: BorderRadius.circular(12),
+            child: image != null && image.isNotEmpty
+                ? Image.network(
+              image,
+              width:  76,
+              height: 76,
+              fit:    BoxFit.cover,
+              errorBuilder: (_, __, ___) => _imagePlaceholder(),
+            )
+                : _imagePlaceholder(),
           ),
-          const SizedBox(width: 15),
 
-          // Item Details
+          const SizedBox(width: 14),
+
+          // ── DETAILS ──────────────────────────────────────────────────
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item['name'],
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w700,
+                          fontSize:   13,
+                          color:      _textDark,
+                          height:     1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // ✅ Remove single item button
+                    GestureDetector(
+                      onTap: () => setState(() => myCart.removeAt(index)),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close_rounded,
+                            size: 14, color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
+
                 const SizedBox(height: 4),
+
+                if (size.isNotEmpty && size != 'Regular')
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color:        _surface,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(size,
+                        style: GoogleFonts.poppins(
+                            fontSize:   10,
+                            color:      _purple,
+                            fontWeight: FontWeight.w600)),
+                  ),
+
                 Text(
-                  "Size: ${item['size']}",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
-                ),
-                Text(
-                  toppingsString,
-                  style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
+                  addOnsText,
+                  style:    GoogleFonts.poppins(fontSize: 11, color: _textMid),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  "₱${item['totalPrice'].toStringAsFixed(2)}",
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: deepPurple, fontSize: 15),
+
+                const SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '₱${totalPrice.toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w800,
+                        color:      _orange,
+                        fontSize:   15,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _qtyButton(
+                          icon:   Icons.remove_rounded,
+                          onTap:  () => _updateQuantity(index, -1),
+                          filled: false,
+                        ),
+                        Padding(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            '$quantity',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.w700,
+                              fontSize:   15,
+                              color:      _textDark,
+                            ),
+                          ),
+                        ),
+                        _qtyButton(
+                          icon:   Icons.add_rounded,
+                          onTap:  () => _updateQuantity(index, 1),
+                          filled: true,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-
-          // Quantity Controls
-          Column(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.close, size: 18, color: Colors.grey),
-                onPressed: () => setState(() => myCart.removeAt(index)),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => _updateQuantity(index, -1),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: lightPurple, borderRadius: BorderRadius.circular(6)),
-                      child: Icon(Icons.remove, size: 16, color: deepPurple),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(item['quantity'].toString(), style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () => _updateQuantity(index, 1),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: deepPurple, borderRadius: BorderRadius.circular(6)),
-                      child: const Icon(Icons.add, size: 16, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          )
         ],
+      ),
+    );
+  }
+
+  Widget _qtyButton({
+    required IconData     icon,
+    required VoidCallback onTap,
+    required bool         filled,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width:  30,
+        height: 30,
+        decoration: BoxDecoration(
+          color:        filled ? _purple : _surface,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon,
+            size: 16, color: filled ? Colors.white : _purple),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      width:  76,
+      height: 76,
+      color:  _surface,
+      child: const Center(
+        child: Icon(Icons.local_cafe_rounded, color: _purple, size: 28),
       ),
     );
   }

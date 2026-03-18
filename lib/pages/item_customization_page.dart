@@ -1,10 +1,10 @@
+// FILE: lib/pages/item_customization_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'cart_page.dart'; // <--- THIS IS THE MAGIC LINK TO YOUR CART
+import 'cart_page.dart';
 
 class ItemCustomizationPage extends StatefulWidget {
   final Map<String, dynamic> item;
-
   const ItemCustomizationPage({super.key, required this.item});
 
   @override
@@ -12,191 +12,516 @@ class ItemCustomizationPage extends StatefulWidget {
 }
 
 class _ItemCustomizationPageState extends State<ItemCustomizationPage> {
-  final Color deepPurple = const Color(0xFF3B2063);
-  final Color lightPurple = const Color(0xFFE8DEF8);
-  final Color backgroundCream = const Color(0xFFFDFDFD);
+  // ── Brand tokens ─────────────────────────────────────────────────────────
+  static const Color _purple   = Color(0xFF7C14D4);
+  static const Color _orange   = Color(0xFFFF8C00);
+  static const Color _bg       = Color(0xFFFAFAFA);
+  static const Color _surface  = Color(0xFFF2EEF8);
+  static const Color _textDark = Color(0xFF1A1A2E);
+  static const Color _textMid  = Color(0xFF6B6B8A);
 
-  // Customization State
-  String _selectedSize = 'Regular';
-  int _quantity = 1;
-  final List<String> _selectedToppings = [];
-
-  // Pricing Rules
-  final double _largeSizeAddOn = 15.00;
-  final Map<String, double> _toppingsMenu = {
-    'Tapioca Pearl': 15.00,
-    'Nata de Coco': 15.00,
-    'Cream Cheese': 20.00,
-    'Crushed Oreo': 15.00,
+  // ── Food categories ───────────────────────────────────────────────────────
+  static const Set<String> _foodCategories = {
+    'CHICKEN WINGS',
+    'ALA CARTE SNACKS',
+    'ALL DAY MEALS',
+    'COMBO MEALS',
+    'AFFORDA-BOWLS',
+    'WAFFLE',
+    'LUCKY CLASSIC JR',
+    'CARD',
   };
 
-  // Calculate the total price dynamically
-  double get totalPrice {
-    double basePrice = widget.item['price'];
+  // ── Drink add-ons ─────────────────────────────────────────────────────────
+  static const Map<String, double> _drinkAddOns = {
+    'Tapioca Pearl': 15.00,
+    'Nata de Coco':  15.00,
+    'Cream Cheese':  20.00,
+    'Crushed Oreo':  15.00,
+    'Pudding':       10.00,
+  };
 
-    if (_selectedSize == 'Large') {
-      basePrice += _largeSizeAddOn;
+  // ── Food add-ons ──────────────────────────────────────────────────────────
+  static const Map<String, double> _foodAddOns = {
+    'Extra Rice':  20.00,
+    'Extra Egg':   15.00,
+    'Extra Sauce': 10.00,
+    'Extra Gravy': 10.00,
+  };
+
+  // ── Wing sauce options ────────────────────────────────────────────────────
+  static const Map<String, double> _wingSauces = {
+    'Buffalo':         0.00,
+    'Garlic Parmesan': 0.00,
+    'Sweet Chili':     0.00,
+    'Teriyaki':        0.00,
+    'Soy Garlic':      0.00,
+    'Salted Egg':      0.00,
+  };
+
+  late List<Map<String, dynamic>> _variants;
+  late int _selectedVariantIndex;
+  int _quantity = 1;
+  final List<String> _selectedAddOns = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final raw = widget.item['variants'];
+    if (raw != null && raw is List && raw.isNotEmpty) {
+      _variants = raw
+          .map<Map<String, dynamic>>(
+              (v) => Map<String, dynamic>.from(v as Map))
+          .toList();
+    } else {
+      _variants = [Map<String, dynamic>.from(widget.item)];
     }
+    _selectedVariantIndex = 0;
+  }
 
-    for (String topping in _selectedToppings) {
-      basePrice += _toppingsMenu[topping]!;
+  // ── Computed props ────────────────────────────────────────────────────────
+  Map<String, dynamic> get _selectedVariant =>
+      _variants[_selectedVariantIndex];
+
+  String get _category =>
+      (widget.item['category'] ?? '').toString().toUpperCase().trim();
+
+  bool get _isFood  => _foodCategories.contains(_category);
+  bool get _isWings => _category == 'CHICKEN WINGS';
+
+  Map<String, double> get _activeAddOns =>
+      _isFood ? _foodAddOns : _drinkAddOns;
+
+  double get _basePrice {
+    final raw = _selectedVariant['price'];
+    double price = 0.0;
+    if (raw is double)      price = raw;
+    else if (raw is int)    price = raw.toDouble();
+    else if (raw != null)   price = double.tryParse(raw.toString()) ?? 0.0;
+
+    if (price == 0.0) {
+      final fallback = widget.item['price'];
+      if (fallback is double) return fallback;
+      if (fallback is int)    return fallback.toDouble();
+      if (fallback != null)
+        return double.tryParse(fallback.toString()) ?? 0.0;
     }
+    return price;
+  }
 
-    return basePrice * _quantity;
+  double _parsePrice(dynamic raw) {
+    if (raw == null)     return 0.0;
+    if (raw is double)   return raw;
+    if (raw is int)      return raw.toDouble();
+    return double.tryParse(raw.toString()) ?? 0.0;
+  }
+
+  double get _addOnsTotal => _selectedAddOns.fold(0.0, (sum, name) {
+    return sum +
+        (_drinkAddOns[name] ??
+            _foodAddOns[name] ??
+            _wingSauces[name] ??
+            0.0);
+  });
+
+  double get _unitPrice  => _basePrice + _addOnsTotal;
+  double get _totalPrice => _unitPrice * _quantity;
+
+  String _sizeLabel(Map<String, dynamic> v) {
+    final size = v['size']?.toString().trim() ?? '';
+    if (size.isEmpty || size == 'none') return 'Regular';
+    if (size == 'M') return 'Medium';
+    if (size == 'L') return 'Large';
+    return size;
+  }
+
+  // ── Add to cart ───────────────────────────────────────────────────────────
+  void _addToCart() {
+    final cartItem = {
+      'name':       widget.item['name'],
+      'image':      widget.item['image'],
+      'category':   widget.item['category'],
+      'barcode':    _selectedVariant['barcode'],
+      'size':       _sizeLabel(_selectedVariant),
+      'size_raw':   _selectedVariant['size'],
+      'add_ons':    List<String>.from(_selectedAddOns),
+      'quantity':   _quantity,
+      'unitPrice':  _unitPrice,
+      'totalPrice': _totalPrice,
+    };
+
+    myCart.add(cartItem);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$_quantity× ${widget.item['name']} (${_sizeLabel(_selectedVariant)}) added!',
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor:  _purple,
+        behavior:         SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final String  itemName  = widget.item['name'] ?? 'Item';
+    final String? imageUrl  = widget.item['image']?.toString();
+    final bool    hasSizes  = _variants.length > 1;
+
     return Scaffold(
-      backgroundColor: backgroundCream,
+      backgroundColor: _bg,
       body: SafeArea(
         child: Column(
           children: [
-            // --- TOP HEADER ---
+
+            // ── HEADER ───────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              padding: const EdgeInsets.fromLTRB(8, 12, 16, 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        size: 20, color: _textDark),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  Row(
-                    children: [
-                      // Clickable Cart Icon
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const CartPage()),
-                          );
-                        },
-                        child: const Icon(Icons.shopping_basket_outlined, size: 28),
+                  Expanded(
+                    child: Text(
+                      itemName,
+                      style: GoogleFonts.poppins(
+                        fontSize:   16,
+                        fontWeight: FontWeight.w700,
+                        color:      _textDark,
                       ),
-                      const SizedBox(width: 15),
-                      const Icon(Icons.account_circle, size: 28),
-                    ],
-                  )
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // ✅ Cart icon with item count badge
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const CartPage())),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width:  40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                              color: _surface, shape: BoxShape.circle),
+                          child: const Icon(Icons.shopping_basket_outlined,
+                              size: 20, color: _purple),
+                        ),
+                        if (myCart.isNotEmpty)
+                          Positioned(
+                            top:   0,
+                            right: 0,
+                            child: Container(
+                              width:  16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${myCart.length}',
+                                  style: const TextStyle(
+                                    color:    Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // --- SCROLLABLE CONTENT ---
+            // ── SCROLLABLE BODY ──────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Hero Image
+
+                    // ── HERO IMAGE ──────────────────────────────────────
                     Container(
-                      width: double.infinity,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        color: lightPurple.withOpacity(0.5),
-                      ),
-                      child: Image.asset(
-                        widget.item['image'],
+                      width:  double.infinity,
+                      height: 220,
+                      color:  _surface,
+                      child: imageUrl != null && imageUrl.isNotEmpty
+                          ? Image.network(
+                        imageUrl,
                         fit: BoxFit.contain,
-                      ),
+                        errorBuilder: (_, __, ___) => _placeholder(),
+                      )
+                          : _placeholder(),
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 2. Title & Base Price
+
+                          // ── NAME & PRICE ──────────────────────────────
                           Text(
-                            widget.item['name'],
+                            itemName,
                             style: GoogleFonts.poppins(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
+                              fontSize:   20,
+                              fontWeight: FontWeight.w800,
+                              color:      _textDark,
+                              height:     1.2,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Base Price: ₱${widget.item['price'].toStringAsFixed(2)}",
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: deepPurple,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-
-                          const Divider(height: 40, thickness: 1),
-
-                          // 3. Size & Quantity Row
+                          const SizedBox(height: 4),
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Size Section (Left)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text("Size", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text("Required", style: GoogleFonts.poppins(fontSize: 10, color: Colors.grey[700])),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 10),
-                                    _buildSizeOption('Regular', 0),
-                                    _buildSizeOption('Large', _largeSizeAddOn),
-                                  ],
+                              Text(
+                                '₱${_basePrice.toStringAsFixed(0)}',
+                                style: GoogleFonts.poppins(
+                                  fontSize:   22,
+                                  fontWeight: FontWeight.w800,
+                                  color:      _orange,
                                 ),
                               ),
-
-                              // Quantity Section (Right)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Quantity", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        _buildQtyButton(Icons.remove, () {
-                                          if (_quantity > 1) setState(() => _quantity--);
-                                        }),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                                          child: Text(
-                                            _quantity.toString(),
-                                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                        _buildQtyButton(Icons.add, () {
-                                          setState(() => _quantity++);
-                                        }),
-                                      ],
-                                    ),
-                                  ],
+                              if (_selectedVariant['barcode'] != null) ...[
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color:        _surface,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'SKU: ${_selectedVariant['barcode']}',
+                                    style: GoogleFonts.poppins(
+                                        fontSize: 10, color: _textMid),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
 
-                          const SizedBox(height: 30),
+                          // ── CATEGORY BADGE ────────────────────────────
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isFood
+                                  ? Colors.orange.withOpacity(0.12)
+                                  : _purple.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isFood
+                                      ? Icons.restaurant_rounded
+                                      : Icons.local_cafe_rounded,
+                                  size:  13,
+                                  color: _isFood
+                                      ? Colors.orange[700]
+                                      : _purple,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _isFood ? 'Food Item' : 'Drink',
+                                  style: GoogleFonts.poppins(
+                                    fontSize:   11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _isFood
+                                        ? Colors.orange[700]
+                                        : _purple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
 
-                          // 4. Toppings Section
-                          Text("Toppings", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text("Optional", style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[500])),
+                          const Divider(
+                              height: 32, thickness: 1,
+                              color: Color(0xFFEAEAF0)),
+
+                          // ── SIZE SELECTOR ─────────────────────────────
+                          if (hasSizes) ...[
+                            _sectionLabel(
+                              _isWings ? 'Piece Count' : 'Size',
+                              required: true,
+                            ),
+                            const SizedBox(height: 10),
+                            ..._variants.asMap().entries.map((e) {
+                              final idx     = e.key;
+                              final variant = e.value;
+                              final label   = _sizeLabel(variant);
+                              final price   = _parsePrice(variant['price']);
+                              final baseP   =
+                              _parsePrice(_variants[0]['price']);
+                              final diff  = price - baseP;
+                              final bool sel =
+                                  idx == _selectedVariantIndex;
+
+                              return GestureDetector(
+                                onTap: () => setState(
+                                        () => _selectedVariantIndex = idx),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: sel
+                                        ? _purple.withOpacity(0.08)
+                                        : Colors.white,
+                                    borderRadius:
+                                    BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: sel
+                                          ? _purple
+                                          : const Color(0xFFEAEAF0),
+                                      width: sel ? 1.5 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        sel
+                                            ? Icons.radio_button_checked
+                                            : Icons.radio_button_off,
+                                        color: sel ? _purple : Colors.grey,
+                                        size:  20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              label,
+                                              style: GoogleFonts.poppins(
+                                                fontSize:   14,
+                                                fontWeight: sel
+                                                    ? FontWeight.w700
+                                                    : FontWeight.normal,
+                                                color: sel
+                                                    ? _purple
+                                                    : _textDark,
+                                              ),
+                                            ),
+                                            if (variant['barcode'] != null)
+                                              Text(
+                                                'SKU: ${variant['barcode']}',
+                                                style: GoogleFonts.poppins(
+                                                    fontSize: 10,
+                                                    color:    _textMid),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        idx == 0
+                                            ? '₱${price.toStringAsFixed(0)}'
+                                            : '+₱${diff.toStringAsFixed(0)}',
+                                        style: GoogleFonts.poppins(
+                                          fontSize:   14,
+                                          fontWeight: FontWeight.w700,
+                                          color: sel ? _orange : _textMid,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                            const Divider(
+                                height: 32, thickness: 1,
+                                color: Color(0xFFEAEAF0)),
+                          ],
+
+                          // ── QUANTITY ──────────────────────────────────
+                          _sectionLabel('Quantity'),
                           const SizedBox(height: 10),
-                          ..._toppingsMenu.entries.map((entry) => _buildToppingCheckbox(entry.key, entry.value)),
+                          Row(
+                            children: [
+                              _qtyBtn(Icons.remove, () {
+                                if (_quantity > 1)
+                                  setState(() => _quantity--);
+                              }),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 22),
+                                child: Text(
+                                  '$_quantity',
+                                  style: GoogleFonts.poppins(
+                                    fontSize:   20,
+                                    fontWeight: FontWeight.w800,
+                                    color:      _textDark,
+                                  ),
+                                ),
+                              ),
+                              _qtyBtn(
+                                  Icons.add, () => setState(() => _quantity++)),
+                            ],
+                          ),
 
-                          const SizedBox(height: 40),
+                          const Divider(
+                              height: 32, thickness: 1,
+                              color: Color(0xFFEAEAF0)),
+
+                          // ── ADD-ONS ───────────────────────────────────
+                          _sectionLabel(
+                            _isFood ? 'Add-ons' : 'Toppings',
+                            subtitle: 'Optional',
+                          ),
+                          const SizedBox(height: 10),
+
+                          if (_isWings) ...[
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              margin:  const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color:
+                                    Colors.orange.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.info_outline_rounded,
+                                      size: 16, color: Colors.orange),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Sauce flavor is based on the item selected from the menu.',
+                                      style: GoogleFonts.poppins(
+                                          fontSize: 11,
+                                          color:    Colors.orange[800]),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          ..._activeAddOns.entries
+                              .map((e) => _buildAddOnTile(e.key, e.value)),
+
+                          const SizedBox(height: 30),
                         ],
                       ),
                     ),
@@ -205,69 +530,59 @@ class _ItemCustomizationPageState extends State<ItemCustomizationPage> {
               ),
             ),
 
-            // --- BOTTOM ADD TO CART BAR ---
+            // ── BOTTOM BAR ───────────────────────────────────────────────
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
               decoration: BoxDecoration(
                 color: Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24)),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
+                  BoxShadow(
+                    color:      Colors.black.withOpacity(0.07),
+                    blurRadius: 16,
+                    offset:     const Offset(0, -4),
+                  ),
                 ],
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
               ),
               child: Row(
                 children: [
-                  // Total Price Display
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text("Total Price", style: GoogleFonts.poppins(color: Colors.grey[500], fontSize: 13)),
+                      Text('Total',
+                          style: GoogleFonts.poppins(
+                              fontSize: 12, color: _textMid)),
                       Text(
-                        "₱${totalPrice.toStringAsFixed(2)}",
-                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 22, color: deepPurple),
+                        '₱${_totalPrice.toStringAsFixed(2)}',
+                        style: GoogleFonts.poppins(
+                          fontSize:   22,
+                          fontWeight: FontWeight.w800,
+                          color:      _purple,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 20),
-                  // --- ADD TO CART BUTTON LOGIC ---
+                  const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        // 1. Create a map of the finalized drink
-                        Map<String, dynamic> customizedDrink = {
-                          'name': widget.item['name'],
-                          'image': widget.item['image'],
-                          'size': _selectedSize,
-                          'toppings': List<String>.from(_selectedToppings),
-                          'quantity': _quantity,
-                          'unitPrice': totalPrice / _quantity,
-                          'totalPrice': totalPrice,
-                        };
-
-                        // 2. Add it to the global cart list inside cart_page.dart!
-                        myCart.add(customizedDrink);
-
-                        // 3. Show success message
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("${_quantity}x ${widget.item['name']} added to cart!"),
-                            backgroundColor: deepPurple,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-
-                        // 4. Go back to menu
-                        Navigator.pop(context);
-                      },
+                      onPressed: _addToCart,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: deepPurple,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        backgroundColor: _purple,
+                        padding:
+                        const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
                       ),
                       child: Text(
-                        "Add to Cart",
-                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        'Add to Cart',
+                        style: GoogleFonts.poppins(
+                          fontSize:   15,
+                          fontWeight: FontWeight.w700,
+                          color:      Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -280,76 +595,120 @@ class _ItemCustomizationPageState extends State<ItemCustomizationPage> {
     );
   }
 
-  // --- HELPER WIDGETS ---
-  Widget _buildSizeOption(String sizeName, double extraPrice) {
-    return InkWell(
-      onTap: () => setState(() => _selectedSize = sizeName),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+  // ── Helper widgets ────────────────────────────────────────────────────────
+
+  Widget _sectionLabel(String label,
+      {bool required = false, String? subtitle}) {
+    return Row(
+      children: [
+        Text(label,
+            style: GoogleFonts.poppins(
+                fontSize:   16,
+                fontWeight: FontWeight.w700,
+                color:      _textDark)),
+        if (required) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color:        _purple.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text('Required',
+                style: GoogleFonts.poppins(
+                    fontSize:   10,
+                    color:      _purple,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+        if (subtitle != null) ...[
+          const SizedBox(width: 8),
+          Text(subtitle,
+              style:
+              GoogleFonts.poppins(fontSize: 12, color: _textMid)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAddOnTile(String name, double price) {
+    final bool selected = _selectedAddOns.contains(name);
+    return GestureDetector(
+      onTap: () => setState(() {
+        selected
+            ? _selectedAddOns.remove(name)
+            : _selectedAddOns.add(name);
+      }),
+      child: Container(
+        margin:  const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? _purple.withOpacity(0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? _purple : const Color(0xFFEAEAF0),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
         child: Row(
           children: [
             Icon(
-              _selectedSize == sizeName ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: _selectedSize == sizeName ? deepPurple : Colors.grey,
-              size: 22,
+              selected
+                  ? Icons.check_box_rounded
+                  : Icons.check_box_outline_blank_rounded,
+              color: selected ? _purple : Colors.grey,
+              size:  22,
             ),
             const SizedBox(width: 10),
-            Text(
-              sizeName,
-              style: GoogleFonts.poppins(fontSize: 15, fontWeight: _selectedSize == sizeName ? FontWeight.w600 : FontWeight.normal),
+            Expanded(
+              child: Text(
+                name,
+                style: GoogleFonts.poppins(
+                  fontSize:   14,
+                  fontWeight: selected
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                  color: selected ? _purple : _textDark,
+                ),
+              ),
             ),
-            if (extraPrice > 0)
-              Text(" (+₱${extraPrice.toStringAsFixed(0)})", style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
+            Text(
+              price == 0 ? 'Free' : '+₱${price.toStringAsFixed(0)}',
+              style: GoogleFonts.poppins(
+                fontSize:   13,
+                color:      selected ? _orange : _textMid,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildToppingCheckbox(String toppingName, double price) {
-    bool isSelected = _selectedToppings.contains(toppingName);
-    return InkWell(
-      onTap: () {
-        setState(() {
-          if (isSelected) {
-            _selectedToppings.remove(toppingName);
-          } else {
-            _selectedToppings.add(toppingName);
-          }
-        });
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.check_box : Icons.check_box_outline_blank,
-              color: isSelected ? deepPurple : Colors.grey,
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              toppingName,
-              style: GoogleFonts.poppins(fontSize: 15, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal),
-            ),
-            const Spacer(),
-            Text("+₱${price.toStringAsFixed(0)}", style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQtyButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
+  Widget _qtyBtn(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(4),
+        width:  38,
+        height: 38,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(8),
+          border:       Border.all(color: const Color(0xFFDDD8F0)),
+          borderRadius: BorderRadius.circular(10),
+          color:        _surface,
         ),
-        child: Icon(icon, size: 20, color: deepPurple),
+        child: Icon(icon, size: 18, color: _purple),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Center(
+      child: Icon(
+        _isFood ? Icons.restaurant_rounded : Icons.local_cafe_rounded,
+        color: _purple,
+        size:  56,
       ),
     );
   }

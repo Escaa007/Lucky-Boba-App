@@ -1,8 +1,12 @@
+// FILE: lib/pages/menu_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'item_customization_page.dart';
 import 'cart_page.dart';
-import 'order_page.dart'; // <--- Ensure this import exists for the back button fallback
+import '../config/app_config.dart';
 
 class MenuPage extends StatefulWidget {
   final String? selectedStore;
@@ -13,314 +17,223 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
-  final Color deepPurple = const Color(0xFF3B2063);
-  final Color lightPurple = const Color(0xFFE8DEF8);
-  final Color backgroundCream = const Color(0xFFFDFDFD);
-
-  int _selectedCategoryIndex = 0;
-
-  final List<String> categories = [
-    'Cheesecake', 'Coffee Frappe', 'Cream Cheese', 'Flavored Pearl', 'Foods',
-    'Frappes', 'Fruit Soda', 'Fruit Tea', 'Hot Drinks', 'Iced Coffee',
-    'Lucky Classic', 'Nova', 'Okinawa Brown Sugar', 'Rocksalt & Cheese', 'Yakult'
-  ];
-
-  final Map<String, List<Map<String, dynamic>>> menuData = {
-    'Cheesecake': [
-      {'name': 'Blueberry Cheesecake', 'price': 110.00, 'image': 'assets/menu/cheese-cake/Blueberry.jpg'},
-      {'name': 'Choco Hazelnut Cheesecake', 'price': 120.00, 'image': 'assets/menu/cheese-cake/Choco Hazelnut.png'},
-      {'name': 'Cookies & Cream Cheesecake', 'price': 115.00, 'image': 'assets/menu/cheese-cake/Cookies & Cream.jpg'},
-      {'name': 'Mango Cheesecake', 'price': 110.00, 'image': 'assets/menu/cheese-cake/Mango.jpg'},
-      {'name': 'Okinawa Cheesecake', 'price': 120.00, 'image': 'assets/menu/cheese-cake/Okinawa.jpg'},
-      {'name': 'Salted Caramel Cheesecake', 'price': 115.00, 'image': 'assets/menu/cheese-cake/Salted Caramel.jpg'},
-      {'name': 'Strawberry Cheesecake', 'price': 110.00, 'image': 'assets/menu/cheese-cake/Strawberry.png'},
-      {'name': 'Taro Cheesecake', 'price': 110.00, 'image': 'assets/menu/cheese-cake/Taro.png'},
-      {'name': 'Vanilla Cheesecake', 'price': 100.00, 'image': 'assets/menu/cheese-cake/Vanilla.jpg'},
-    ],
-    'Coffee Frappe': [
-      {'name': 'Caramel Macchiato', 'price': 125.00, 'image': 'assets/menu/coffee-frappe/Caramel Macchiato.jpg'},
-      {'name': 'Java Chip Coffee Frappe', 'price': 130.00, 'image': 'assets/menu/coffee-frappe/Java Chip Coffee Frappe.jpg'},
-      {'name': 'Mocha Coffee Frappe', 'price': 125.00, 'image': 'assets/menu/coffee-frappe/Mocha Coffee Frappe.jpg'},
-      {'name': 'Toffee Caramel Coffee Frappe', 'price': 130.00, 'image': 'assets/menu/coffee-frappe/Toffee Caramel Coffee Frappe.jpg'},
-    ],
-    'Cream Cheese': [
-      {'name': 'Belgian Chocolate Cream Cheese', 'price': 120.00, 'image': 'assets/menu/cream-cheese/Belgian Chocolate.png'},
-      {'name': 'Hersheys Chocolate Cream Cheese', 'price': 120.00, 'image': 'assets/menu/cream-cheese/Hersheys Chocolate.png'},
-      {'name': 'Matcha Cream Cheese', 'price': 115.00, 'image': 'assets/menu/cream-cheese/Matcha.png'},
-      {'name': 'Red Velvet Cream Cheese', 'price': 120.00, 'image': 'assets/menu/cream-cheese/Red Velvet.png'},
-      {'name': 'Salted Caramel Cream Cheese', 'price': 115.00, 'image': 'assets/menu/cream-cheese/Salted Caramel.jpg'},
-      {'name': 'Taro Cream Cheese', 'price': 110.00, 'image': 'assets/menu/cream-cheese/Taro.png'},
-      {'name': 'Vanilla Cream Cheese', 'price': 110.00, 'image': 'assets/menu/cream-cheese/Vanilla.jpg'},
-    ],
-    'Flavored Pearl': [
-      {'name': 'Avocado Milk Tea', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/Avocado Milk Tea.png'},
-      {'name': 'Blueberry Milk Tea', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/Blueberry Milk Tea.jpg'},
-      {'name': 'Caramel Macchiato Milk Tea', 'price': 120.00, 'image': 'assets/menu/flavored-pearl/Caramel Macchiato Milk Tea.png'},
-      {'name': 'Chocolate', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/chocolate.png'},
-      {'name': 'Cookies & Cream Milk Tea', 'price': 115.00, 'image': 'assets/menu/flavored-pearl/Cookies & Cream Milk Tea.jpg'},
-      {'name': 'Java Chip Milk Tea', 'price': 120.00, 'image': 'assets/menu/flavored-pearl/Java Chip Milk Tea.png'},
-      {'name': 'Mango Milk Tea', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/Mango Milk Tea.jpg'},
-      {'name': 'Matcha Milk Tea', 'price': 115.00, 'image': 'assets/menu/flavored-pearl/Matcha Milk Tea.png'},
-      {'name': 'Mocha Milk Tea', 'price': 120.00, 'image': 'assets/menu/flavored-pearl/Mocha Milk Tea.png'},
-      {'name': 'Okinawa Milk Tea', 'price': 115.00, 'image': 'assets/menu/flavored-pearl/Okinawa Milk Tea.png'},
-      {'name': 'Red Velvet Milk Tea', 'price': 120.00, 'image': 'assets/menu/flavored-pearl/Red Velvet Milk Tea.jpg'},
-      {'name': 'Salted Caramel Milk Tea', 'price': 115.00, 'image': 'assets/menu/flavored-pearl/Salted Caramel Milk Tea.png'},
-      {'name': 'Strawberry', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/Strawberry.jpg'},
-      {'name': 'Taro', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/taro.png'},
-      {'name': 'Wintermelon Milk Tea', 'price': 110.00, 'image': 'assets/menu/flavored-pearl/Wintermelon Milk Tea.png'},
-    ],
-    'Foods': [
-      {'name': 'Combo 1', 'price': 99.00, 'image': 'assets/menu/foods/1.png'},
-      {'name': 'Combo 2', 'price': 99.00, 'image': 'assets/menu/foods/2.png'},
-      {'name': 'Combo 3', 'price': 99.00, 'image': 'assets/menu/foods/3.png'},
-      {'name': 'Combo 4', 'price': 99.00, 'image': 'assets/menu/foods/4.png'},
-      {'name': 'Combo 5', 'price': 99.00, 'image': 'assets/menu/foods/5.png'},
-      {'name': 'Combo 6', 'price': 99.00, 'image': 'assets/menu/foods/6.png'},
-      {'name': 'Chicken Twister Wrap', 'price': 85.00, 'image': 'assets/menu/foods/Chicken Twister Wrap.png'},
-      {'name': 'French Fries', 'price': 50.00, 'image': 'assets/menu/foods/fries.png'},
-      {'name': 'Loaded Fries', 'price': 75.00, 'image': 'assets/menu/foods/fries 2.png'},
-      {'name': 'Longganisa Plate', 'price': 120.00, 'image': 'assets/menu/foods/longga plate.png'},
-      {'name': 'Chicken Poppers', 'price': 80.00, 'image': 'assets/menu/foods/poppers.png'},
-      {'name': 'Spaghetti', 'price': 90.00, 'image': 'assets/menu/foods/spagh.png'},
-      {'name': 'Twister', 'price': 80.00, 'image': 'assets/menu/foods/twister.png'},
-    ],
-    'Frappes': [
-      {'name': 'Belgian Chocolate Frappe', 'price': 120.00, 'image': 'assets/menu/frappes/Belgian Chocolate.png'},
-      {'name': 'Cookies & Cream Frappe', 'price': 120.00, 'image': 'assets/menu/frappes/Cookies & Cream.jpg'},
-      {'name': 'Dark Chocolate Frappe', 'price': 120.00, 'image': 'assets/menu/frappes/Dark Chocolate.png'},
-      {'name': 'Hersheys Chocolate Frappe', 'price': 120.00, 'image': 'assets/menu/frappes/Hersheys Chocolate.png'},
-      {'name': 'Salted Caramel Frappe', 'price': 120.00, 'image': 'assets/menu/frappes/Salted Caramel.jpg'},
-      {'name': 'Taro Frappe', 'price': 120.00, 'image': 'assets/menu/frappes/Taro.jpg'},
-    ],
-    'Fruit Soda': [
-      {'name': 'Berries', 'price': 100.00, 'image': 'assets/menu/fruit-soda/berries.jpg'},
-      {'name': 'Blueberry', 'price': 100.00, 'image': 'assets/menu/fruit-soda/blueberry.jpg'},
-      {'name': 'Green Apple', 'price': 100.00, 'image': 'assets/menu/fruit-soda/green apple.jpg'},
-      {'name': 'Lemon', 'price': 100.00, 'image': 'assets/menu/fruit-soda/lemon.jpg'},
-      {'name': 'Lychee', 'price': 100.00, 'image': 'assets/menu/fruit-soda/lychee.jpg'},
-      {'name': 'Passion', 'price': 100.00, 'image': 'assets/menu/fruit-soda/passion.jpg'},
-      {'name': 'Strawberry', 'price': 100.00, 'image': 'assets/menu/fruit-soda/strawberry.jpg'},
-    ],
-    'Fruit Tea': [
-      {'name': 'Honey Lemon Green Tea', 'price': 105.00, 'image': 'assets/menu/fruit-tea/HONEY LEMON GREEN TEA.jpg'},
-      {'name': 'Lemon Chia Green Tea', 'price': 110.00, 'image': 'assets/menu/fruit-tea/LEMON CHIA GREEN TEA.jpg'},
-      {'name': 'Lemon Cucumber Green Tea', 'price': 110.00, 'image': 'assets/menu/fruit-tea/LEMON CUCUMBER GREEN TEA.jpg'},
-      {'name': 'Passion Fruit Green Tea', 'price': 105.00, 'image': 'assets/menu/fruit-tea/PASSION FRUIT GREEN TEA.jpg'},
-      {'name': 'Wintermelon Green Tea', 'price': 105.00, 'image': 'assets/menu/fruit-tea/WINTERMELON GREEN TEA.jpg'},
-    ],
-    'Hot Drinks': [
-      {'name': 'Hot Drink 01', 'price': 90.00, 'image': 'assets/menu/hot-drinks/01.png'},
-      {'name': 'Hot Drink 02', 'price': 90.00, 'image': 'assets/menu/hot-drinks/02.png'},
-      {'name': 'Hot Drink 03', 'price': 90.00, 'image': 'assets/menu/hot-drinks/03.png'},
-      {'name': 'Hot Drink 09', 'price': 90.00, 'image': 'assets/menu/hot-drinks/9.png'},
-      {'name': 'Hot Drink 10', 'price': 90.00, 'image': 'assets/menu/hot-drinks/10.png'},
-      {'name': 'Hot Drink 11', 'price': 90.00, 'image': 'assets/menu/hot-drinks/11.png'},
-      {'name': 'Hot Drink 12', 'price': 90.00, 'image': 'assets/menu/hot-drinks/12.png'},
-      {'name': 'Hot Drink 13', 'price': 90.00, 'image': 'assets/menu/hot-drinks/13.png'},
-      {'name': 'Hot Cup', 'price': 90.00, 'image': 'assets/menu/hot-drinks/Copy of hot cup.jpg'},
-    ],
-    'Iced Coffee': [
-      {'name': 'Caramel Macchiato', 'price': 115.00, 'image': 'assets/menu/iced-coffee/Caramel Macchiato.png'},
-      {'name': 'Iced Coffee', 'price': 100.00, 'image': 'assets/menu/iced-coffee/Iced Coffee.png'},
-      {'name': 'Java Chip', 'price': 115.00, 'image': 'assets/menu/iced-coffee/Java Chip.png'},
-      {'name': 'Mocha', 'price': 115.00, 'image': 'assets/menu/iced-coffee/Mocha.png'},
-      {'name': 'Vanilla', 'price': 110.00, 'image': 'assets/menu/iced-coffee/Vanilla.png'},
-    ],
-    'Iced Latte': [
-      {'name': 'Vanilla Coffee Latte', 'price': 110.00, 'image': 'assets/menu/iced-latte/Copy of vanilla coffee latte.png'},
-      {'name': 'Iced Chocolate Latte', 'price': 115.00, 'image': 'assets/menu/iced-latte/Iced Chocolate Latte.png'},
-      {'name': 'Iced Mocha Milk Tea Latte', 'price': 115.00, 'image': 'assets/menu/iced-latte/Iced Mocha Milk Tea Latte.png'},
-    ],
-    'Lucky Classic': [
-      {'name': 'Classic Cheesecake', 'price': 95.00, 'image': 'assets/menu/lucky-classic/Classic Cheesecake.jpg'},
-      {'name': 'Classic Cream Cheese Violet', 'price': 95.00, 'image': 'assets/menu/lucky-classic/Classic Cream Cheese Violet.jpg'},
-      {'name': 'Classic Buddy', 'price': 95.00, 'image': 'assets/menu/lucky-classic/Copy of classic buddy.png'},
-      {'name': 'Classic Duo', 'price': 95.00, 'image': 'assets/menu/lucky-classic/Copy of classic duo.png'},
-      {'name': 'Classic Pearl Milk Tea', 'price': 95.00, 'image': 'assets/menu/lucky-classic/Copy of classic pearl milk tea.png'},
-      {'name': 'Vanilla RSC', 'price': 95.00, 'image': 'assets/menu/lucky-classic/VANILLA RSC.png'},
-    ],
-    'Nova': [
-      {'name': 'Berries Nova', 'price': 115.00, 'image': 'assets/menu/nova/Berries.jpg'},
-      {'name': 'Green Apple Nova', 'price': 115.00, 'image': 'assets/menu/nova/Green Apple.jpg'},
-      {'name': 'Lychee Lemon Nova', 'price': 115.00, 'image': 'assets/menu/nova/Lychee Lemon.jpg'},
-      {'name': 'Mango Lemon Nova', 'price': 115.00, 'image': 'assets/menu/nova/Mango Lemon.jpg'},
-      {'name': 'Strawberry Nova', 'price': 115.00, 'image': 'assets/menu/nova/Strawberry.jpg'},
-    ],
-    'Okinawa Brown Sugar': [
-      {'name': 'Okinawa Brown Sugar 1', 'price': 110.00, 'image': 'assets/menu/okinawa-brown-sugar/Copy of bs1.jpg'},
-      {'name': 'Okinawa Brown Sugar 2', 'price': 110.00, 'image': 'assets/menu/okinawa-brown-sugar/Copy of bs2.jpg'},
-      {'name': 'Okinawa Brown Sugar 3', 'price': 110.00, 'image': 'assets/menu/okinawa-brown-sugar/Copy of bs3.jpg'},
-    ],
-    'Rocksalt & Cheese': [
-      {'name': 'Avocado RSC', 'price': 110.00, 'image': 'assets/menu/rocksalt&cheese/avocado rsc.jpg'},
-      {'name': 'Dark Choco RSC', 'price': 110.00, 'image': 'assets/menu/rocksalt&cheese/Dark Choco RSC.jpg'},
-      {'name': 'Signature RSC', 'price': 120.00, 'image': 'assets/menu/rocksalt&cheese/Gemini_Generated_Image_cd0y5ycd0y5ycd0y.png'},
-      {'name': 'Mango RSC', 'price': 110.00, 'image': 'assets/menu/rocksalt&cheese/MANGO RSC.png'},
-      {'name': 'Wintermelon RSC', 'price': 110.00, 'image': 'assets/menu/rocksalt&cheese/Wintermelon.png'},
-    ],
-    'Yakult': [
-      {'name': 'Blueberry Yakult', 'price': 100.00, 'image': 'assets/menu/yakult/Blueberry Yakult-v.jpg'},
-      {'name': 'Green Apple Yakult', 'price': 100.00, 'image': 'assets/menu/yakult/Copy of green apple yakult.png'},
-      {'name': 'Lychee Yakult', 'price': 100.00, 'image': 'assets/menu/yakult/LYCHEE YAKULT.jpg'},
-      {'name': 'Strawberry Yakult', 'price': 100.00, 'image': 'assets/menu/yakult/Strawberry.png'},
-    ],
+  static const Set<String> _hiddenCategories = {
+    'PROMOS',
+    'GRAND OPENING PROMO',
+    'FREEBIES',
   };
 
-  List<Map<String, dynamic>> get currentItems {
-    return menuData[categories[_selectedCategoryIndex]] ?? [];
+  static const Color _purple   = Color(0xFF7C14D4);
+  static const Color _orange   = Color(0xFFFF8C00);
+  static const Color _bg       = Color(0xFFFAFAFA);
+  static const Color _surface  = Color(0xFFF2EEF8);
+  static const Color _textDark = Color(0xFF1A1A2E);
+  static const Color _textMid  = Color(0xFF6B6B8A);
+
+  int           _selectedCategoryIndex = 0;
+  List<dynamic> _allMenuItems          = [];
+  List<String>  _categories            = [];
+  bool          _isLoading             = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMenu();
+  }
+
+  Future<void> _fetchMenu() async {
+    try {
+      debugPrint('🌐 [MenuPage] Fetching menu from ${AppConfig.apiUrl}...');
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiUrl}/public-menu'),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        final Set<String>   cats = {};
+        final List<dynamic> sanitizedItems = [];
+
+        for (var item in data) {
+          String cat = item['category']?.toString().trim() ?? '';
+          if (cat.isEmpty || cat == 'null') cat = 'General';
+          if (_hiddenCategories.contains(cat.toUpperCase())) continue;
+          item['category'] = cat;
+          cats.add(cat);
+          sanitizedItems.add(item);
+        }
+
+        // ── DEBUG: print first item's raw image field ──────────────────
+        if (sanitizedItems.isNotEmpty) {
+          debugPrint('🔍 [MenuPage] Sample item name  : ${sanitizedItems.first['name']}');
+          debugPrint('🔍 [MenuPage] Sample item image : ${sanitizedItems.first['image']}');
+          debugPrint('🔍 [MenuPage] All keys in item  : ${(sanitizedItems.first as Map).keys.toList()}');
+        }
+
+        setState(() {
+          _allMenuItems = sanitizedItems;
+          _categories   = cats.toList()..sort();
+          if (_categories.isEmpty) _categories = ['General'];
+          _isLoading = false;
+        });
+
+        debugPrint('✅ [MenuPage] Loaded ${sanitizedItems.length} items.');
+      } else {
+        debugPrint('❌ [MenuPage] Bad status: ${response.statusCode}');
+        debugPrint('❌ [MenuPage] Body: ${response.body}');
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('❌ [MenuPage] Fetch error: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ── DEBUG: prints every URL it builds so you can paste it in a browser ──
+  String? _buildImageUrl(dynamic rawImage) {
+    String? imageUrl = rawImage?.toString().trim();
+
+    debugPrint('🖼️ [ImageUrl] Raw value from API: "$rawImage"');
+
+    if (imageUrl == null || imageUrl.isEmpty || imageUrl == 'null') {
+      debugPrint('🖼️ [ImageUrl] ⚠️  Empty or null — showing placeholder');
+      return null;
+    }
+
+    if (imageUrl.startsWith('http')) {
+      debugPrint('🖼️ [ImageUrl] ✅ Already absolute: $imageUrl');
+      return imageUrl;
+    }
+
+    if (imageUrl.startsWith('/')) imageUrl = imageUrl.substring(1);
+    final full = Uri.encodeFull('${AppConfig.baseUrl}/$imageUrl');
+    debugPrint('🖼️ [ImageUrl] ✅ Built URL: $full');
+    return full;
+  }
+
+  List<Map<String, dynamic>> get _groupedCurrentItems {
+    if (_categories.isEmpty) return [];
+    final categoryItems = _allMenuItems
+        .where((i) => i['category'] == _categories[_selectedCategoryIndex])
+        .toList();
+    final Map<String, List<dynamic>> grouped = {};
+    for (final item in categoryItems) {
+      final name = (item['name'] ?? '').toString().trim();
+      grouped.putIfAbsent(name, () => []).add(item);
+    }
+    return grouped.entries.map((entry) {
+      final variants = entry.value;
+      variants.sort((a, b) {
+        final priceA = double.tryParse(a['price']?.toString() ?? '0') ?? 0;
+        final priceB = double.tryParse(b['price']?.toString() ?? '0') ?? 0;
+        return priceA.compareTo(priceB);
+      });
+      final representative = Map<String, dynamic>.from(variants.first as Map);
+      representative['variants'] = variants;
+      return representative;
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final groupedItems = _groupedCurrentItems;
+
     return Scaffold(
-      backgroundColor: backgroundCream,
+      backgroundColor: _bg,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── APP BAR ──────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+              child: Row(
                 children: [
-                  // --- WELCOME TEXT WITH STORE NAME ---
-                  if (widget.selectedStore != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 8),
-                      child: Text(
-                        "Welcome To ${widget.selectedStore} Branch",
-                        style: GoogleFonts.fredoka(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: deepPurple,
-                        ),
-                      ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: const BoxDecoration(color: _surface, shape: BoxShape.circle),
+                      child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: _purple),
                     ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 22),
-                            onPressed: () {
-                              // SAFETY CHECK: Prevents blackout screens
-                              if (Navigator.canPop(context)) {
-                                Navigator.pop(context);
-                              } else {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const OrderPage()),
-                                );
-                              }
-                            },
-                          ),
-                          Text(
-                            "Lucky Boba Menu",
-                            style: GoogleFonts.fredoka(fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CartPage(),
-                                ),
-                              ).then((_) {
-                                setState(() {});
-                              });
-                            },
-                            child: const Icon(Icons.shopping_basket_outlined, size: 28),
-                          ),
-                          const SizedBox(width: 15),
-                          const Icon(Icons.account_circle, size: 28),
-                        ],
-                      )
-                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Lucky Menu', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: _textDark)),
+                      Text(widget.selectedStore ?? 'Select a Branch', style: GoogleFonts.poppins(fontSize: 12, color: _textMid, fontWeight: FontWeight.w500)),
+                    ]),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartPage())),
+                    child: Container(
+                      width: 40, height: 40,
+                      decoration: const BoxDecoration(color: _surface, shape: BoxShape.circle),
+                      child: const Icon(PhosphorIconsRegular.shoppingCart, size: 20, color: _purple),
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // Sub-header logic
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Drink Selection",
-                    style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Pick your favorite and customize it just how you like.",
-                    style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 25),
-
-            // Horizontal Category List
+            // ── CATEGORY CHIPS ────────────────────────────────────────────
             SizedBox(
-              height: 45,
+              height: 40,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                itemCount: categories.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _categories.length,
                 itemBuilder: (context, index) {
-                  bool isSelected = index == _selectedCategoryIndex;
+                  final bool selected = index == _selectedCategoryIndex;
                   return GestureDetector(
                     onTap: () => setState(() => _selectedCategoryIndex = index),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Column(
-                        children: [
-                          Text(
-                            categories[index],
-                            style: GoogleFonts.poppins(
-                              color: isSelected ? deepPurple : Colors.grey[500],
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              fontSize: 15,
-                            ),
-                          ),
-                          if (isSelected)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              height: 3,
-                              width: 22,
-                              decoration: BoxDecoration(
-                                  color: deepPurple,
-                                  borderRadius: BorderRadius.circular(2)
-                              ),
-                            )
-                        ],
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.only(right: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: selected ? _purple : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: selected ? _purple : const Color(0xFFEAEAF0), width: 1),
+                        boxShadow: selected ? [BoxShadow(color: _purple.withOpacity(0.20), blurRadius: 8, offset: const Offset(0, 3))] : [],
                       ),
+                      child: Text(_categories[index], style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : _textMid)),
                     ),
                   );
                 },
               ),
             ),
 
-            // Main Product Grid
+            const SizedBox(height: 14),
+
+            // ── MENU GRID ─────────────────────────────────────────────────
             Expanded(
-              child: currentItems.isEmpty
-                  ? const Center(child: Text("Items coming soon!"))
-                  : GridView.builder(
-                padding: const EdgeInsets.all(20),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
-                  childAspectRatio: 0.72,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: _purple))
+                  : groupedItems.isEmpty
+                  ? Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(PhosphorIconsRegular.coffee, size: 48, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Text('No items in this category', style: GoogleFonts.poppins(color: _textMid, fontSize: 14)),
+                ]),
+              )
+                  : RefreshIndicator(
+                onRefresh: _fetchMenu,
+                color: _purple,
+                backgroundColor: Colors.white,
+                child: GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  cacheExtent: 300,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
+                    childAspectRatio: 0.72,
+                  ),
+                  itemCount: groupedItems.length,
+                  itemBuilder: (context, index) => _buildItemCard(groupedItems[index]),
                 ),
-                itemCount: currentItems.length,
-                itemBuilder: (context, index) => _buildItemCard(currentItems[index]),
               ),
             ),
           ],
@@ -330,82 +243,181 @@ class _MenuPageState extends State<MenuPage> {
   }
 
   Widget _buildItemCard(Map<String, dynamic> item) {
+    final String  itemName  = item['name'] ?? 'Boba Drink';
+    final String? imageUrl  = _buildImageUrl(item['image']);
+    final List<dynamic> variants = item['variants'] as List<dynamic>? ?? [item];
+
+    final double startingPrice = double.tryParse(
+        item['price']?.toString() ?? item['sellingPrice']?.toString() ?? '0') ?? 0.0;
+
+    final bool hasMultiplePrices = variants.length > 1 &&
+        variants.any((v) {
+          final p = double.tryParse(v['price']?.toString() ?? '0') ?? 0.0;
+          return p != startingPrice;
+        });
+
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ItemCustomizationPage(item: item),
-          ),
-        );
+        final List<Map<String, dynamic>> normalizedVariants =
+        variants.map<Map<String, dynamic>>((v) {
+          final map = Map<String, dynamic>.from(v as Map);
+          final raw = map['price'];
+          if (raw is! double) {
+            map['price'] = (raw is int) ? raw.toDouble() : double.tryParse(raw?.toString() ?? '0') ?? 0.0;
+          }
+          return map;
+        }).toList();
+
+        final Map<String, dynamic> itemToPass = Map.from(item);
+        itemToPass['image']    = imageUrl;
+        itemToPass['price']    = startingPrice;
+        itemToPass['variants'] = normalizedVariants;
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ItemCustomizationPage(item: itemToPass)));
       },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4)
-            )
-          ],
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEAEAF0), width: 1),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
+              flex: 3,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.asset(
-                  item['image'],
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: lightPurple,
-                    child: Icon(Icons.local_drink, color: deepPurple),
-                  ),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? _SafeNetworkImage(url: imageUrl, placeholder: _buildPlaceholderImage())
+                    : _buildPlaceholderImage(),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item['name'],
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "₱${item['price'].toStringAsFixed(0)}",
-                        style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            color: deepPurple,
-                            fontSize: 15
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(itemName,
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 12, color: _textDark, height: 1.3),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            hasMultiplePrices
+                                ? 'from ₱${startingPrice.toStringAsFixed(0)}'
+                                : '₱${startingPrice.toStringAsFixed(0)}',
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: _orange, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                            color: deepPurple,
-                            borderRadius: BorderRadius.circular(8)
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(color: _purple, borderRadius: BorderRadius.circular(10)),
+                          child: const Icon(Icons.add_rounded, color: Colors.white, size: 16),
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 20),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      color: const Color(0xFFF2EEF8),
+      width: double.infinity,
+      child: const Center(child: Icon(PhosphorIconsRegular.coffee, color: Color(0xFF7C14D4), size: 36)),
+    );
+  }
+}
+
+// ── Safe network image — NO setState during build ─────────────────────────────
+// ✅ Fixes: "setState() called during build" error
+// Uses WidgetsBinding.instance.addPostFrameCallback to defer state changes
+class _SafeNetworkImage extends StatefulWidget {
+  final String url;
+  final Widget placeholder;
+  final int    maxRetries;
+
+  const _SafeNetworkImage({
+    required this.url,
+    required this.placeholder,
+    this.maxRetries = 2,
+  });
+
+  @override
+  State<_SafeNetworkImage> createState() => _SafeNetworkImageState();
+}
+
+class _SafeNetworkImageState extends State<_SafeNetworkImage> {
+  int  _attempt = 0;
+  bool _failed  = false;
+  bool _ready   = false; // ✅ stagger flag
+  late Key _imageKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageKey = UniqueKey();
+
+    // ✅ Stagger image requests by up to 1500ms based on URL hash
+    // This prevents all images hitting the server simultaneously
+    final delay = Duration(milliseconds: widget.url.hashCode.abs() % 1500);
+    Future.delayed(delay, () {
+      if (mounted) setState(() => _ready = true);
+    });
+  }
+
+  // ✅ Deferred setState — never called during build phase
+  void _retry() {
+    if (!mounted) return;
+    if (_attempt >= widget.maxRetries) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _failed = true);
+      });
+      return;
+    }
+    // Longer backoff: 1s, 2s, 3s between retries
+    Future.delayed(Duration(seconds: _attempt + 1), () {
+      if (mounted) {
+        setState(() {
+          _attempt++;
+          _failed   = false;
+          _imageKey = UniqueKey();
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_failed) return widget.placeholder;
+
+    // ✅ Show placeholder until stagger delay fires
+    if (!_ready) return widget.placeholder;
+
+    return Image.network(
+      widget.url,
+      key:   _imageKey,
+      width: double.infinity,
+      fit:   BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('❌ [Image] Failed to load: ${widget.url} | Error: $error');
+        _retry();
+        return widget.placeholder;
+      },
     );
   }
 }

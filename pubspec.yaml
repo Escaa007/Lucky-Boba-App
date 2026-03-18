@@ -19,6 +19,15 @@ dependencies:
   latlong2: ^0.9.0
   video_player: ^2.8.2
   geolocator: ^13.0.0
+  phosphor_flutter: ^2.1.0
+  http: ^1.2.0
+  shared_preferences: ^2.2.2
+  qr_flutter: ^4.1.0
+  image_picker: ^1.1.2
+  google_sign_in: ^6.2.1
+  firebase_core: ^3.3.0
+  firebase_auth: ^5.1.0
+  flutter_facebook_auth: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -30,20 +39,3 @@ flutter:
   assets:
     - assets/images/
     - assets/videos/landingvideo.mp4
-    # --- Menu Category Assets ---
-    - assets/menu/cheese-cake/
-    - assets/menu/coffee-frappe/
-    - assets/menu/cream-cheese/
-    - assets/menu/flavored-pearl/
-    - assets/menu/foods/
-    - assets/menu/frappes/
-    - assets/menu/fruit-soda/
-    - assets/menu/fruit-tea/
-    - assets/menu/hot-drinks/
-    - assets/menu/iced-coffee/
-    - assets/menu/iced-latte/
-    - assets/menu/lucky-classic/
-    - assets/menu/nova/
-    - assets/menu/okinawa-brown-sugar/
-    - assets/menu/rocksalt&cheese/
-    - assets/menu/yakult/

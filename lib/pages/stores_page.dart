@@ -4,8 +4,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:math' as math;
-import 'menu_page.dart'; // Ensure this points to your MenuPage file
+import 'menu_page.dart';
 
 class StoresPage extends StatefulWidget {
   const StoresPage({super.key});
@@ -24,6 +25,9 @@ class _StoresPageState extends State<StoresPage> {
   LatLng _userLocation = const LatLng(14.7040, 121.0340);
   bool _isLoadingLocation = false;
 
+  bool _isMapReady = false;
+
+  // --- RESTORED: ALL 27 LOCATIONS ---
   final List<Map<String, dynamic>> storeLocations = [
     {'name': 'East Fairview', 'address': 'Dunhill Corner Winston St. East Fairview Q.C', 'image': 'assets/images/eastfairview_branch.png', 'lat': 14.7032, 'lng': 121.0695, 'closeTime': '09:00 PM', 'url': 'https://www.google.com/maps/search/?api=1&query=14.7032,121.0695'},
     {'name': 'AUF Angeles', 'address': 'Stall #7 JCL foodcourt, 704 Fajardo st.', 'image': 'assets/images/auf_branch.jpg', 'lat': 15.1451, 'lng': 120.5941, 'closeTime': '07:00 PM', 'url': 'https://www.google.com/maps/search/?api=1&query=15.1451,120.5941'},
@@ -73,20 +77,34 @@ class _StoresPageState extends State<StoresPage> {
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoadingLocation = true);
+
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 10,
+    );
+
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: locationSettings,
+    );
+
     setState(() {
       _userLocation = LatLng(position.latitude, position.longitude);
       _calculateAndSortStores();
       _isLoadingLocation = false;
     });
-    _mapController.move(LatLng(storeLocations[0]['lat'], storeLocations[0]['lng']), 15.0);
+
+    if (_isMapReady) {
+      _mapController.move(LatLng(storeLocations[0]['lat'], storeLocations[0]['lng']), 15.0);
+    }
   }
 
   void _onPageChanged(int index) {
+    if (!_isMapReady) return;
     final store = storeLocations[index];
     _mapController.move(LatLng(store['lat'], store['lng']), 15.0);
   }
@@ -100,6 +118,7 @@ class _StoresPageState extends State<StoresPage> {
 
   @override
   Widget build(BuildContext context) {
+    // RESTORED SCAFFOLD!
     return Scaffold(
       body: Stack(
         children: [
@@ -108,12 +127,16 @@ class _StoresPageState extends State<StoresPage> {
             options: MapOptions(
               initialCenter: _userLocation,
               initialZoom: 11.0,
+              onMapReady: () {
+                setState(() {
+                  _isMapReady = true;
+                });
+              },
             ),
             children: [
               TileLayer(
                 urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
-                // --- ADD THIS LINE TO FIX THE WARNING ---
                 retinaMode: MediaQuery.of(context).devicePixelRatio > 1.0,
                 userAgentPackageName: 'com.example.luckyboba_app',
               ),
@@ -123,21 +146,45 @@ class _StoresPageState extends State<StoresPage> {
                     point: _userLocation,
                     width: 40,
                     height: 40,
-                    child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
-                  ),
-                  ...storeLocations.map((store) => Marker(
-                    point: LatLng(store['lat'], store['lng']),
-                    width: 50,
-                    height: 50,
-                    child: Image.asset(
-                      'assets/images/maps_logo.png',
-                      errorBuilder: (ctx, err, stack) => const Icon(Icons.location_on, color: Colors.orange, size: 40),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.my_location, color: Colors.blue, size: 24),
                     ),
-                  )),
+                  ),
+                  ...storeLocations.map((store) {
+                    double markerSize = _isMapReady && _mapController.camera.zoom > 12 ? 40.0 : 25.0;
+
+                    return Marker(
+                      point: LatLng(store['lat'], store['lng']),
+                      width: markerSize,
+                      height: markerSize,
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: deepPurple.withValues(alpha: 0.3), blurRadius: 8)],
+                          border: Border.all(color: deepPurple, width: 2),
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/maps_logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (ctx, err, stack) => Icon(PhosphorIconsBold.mapPin, color: deepPurple, size: 18),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                 ],
               ),
             ],
           ),
+
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -146,46 +193,53 @@ class _StoresPageState extends State<StoresPage> {
                   CircleAvatar(
                     backgroundColor: Colors.white,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: deepPurple, size: 18),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   const SizedBox(width: 15),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
-                    ),
-                    child: Text(
-                      "Select Your Outlet",
-                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [BoxShadow(color: deepPurple.withValues(alpha: 0.1), blurRadius: 15)],
+                      ),
+                      child: Text(
+                        "Select Your Outlet",
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: deepPurple),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
+
+          // --- LOCATION BUTTON ---
           Positioned(
-            bottom: 310,
+            bottom: 350, // Pushed up safely
             right: 16,
             child: FloatingActionButton(
               heroTag: 'location_btn',
               backgroundColor: Colors.white,
+              elevation: 4,
               foregroundColor: deepPurple,
               onPressed: _isLoadingLocation ? null : _getCurrentLocation,
               child: _isLoadingLocation
                   ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.my_location_rounded),
+                  : Icon(PhosphorIconsBold.crosshair),
             ),
           ),
+
+          // --- STORE CAROUSEL ---
           Positioned(
-            bottom: 20,
+            bottom: 110, // Sits perfectly over the bottom navbar
             left: 0,
             right: 0,
             child: SizedBox(
-              height: 280,
+              height: 230, // Restored vertical layout height
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: _onPageChanged,
@@ -201,108 +255,94 @@ class _StoresPageState extends State<StoresPage> {
     );
   }
 
+  // --- RESTORED: VERTICAL CARD LAYOUT WITH ALL DETAILS ---
   Widget _buildStoreCard(Map<String, dynamic> store) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 5))
+          BoxShadow(
+            color: deepPurple.withValues(alpha: 0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          )
         ],
       ),
       child: Column(
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             child: Image.asset(
               store['image'],
-              height: 100,
+              height: 90,
               width: double.infinity,
               fit: BoxFit.cover,
               errorBuilder: (ctx, err, stack) => Container(
-                height: 100,
+                height: 90,
                 color: lightPurple,
-                child: Icon(Icons.storefront, color: deepPurple),
+                child: Icon(PhosphorIconsRegular.storefront, color: deepPurple, size: 40),
               ),
             ),
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            store['name'],
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          store['name'],
+                          style: GoogleFonts.fredoka(fontWeight: FontWeight.bold, fontSize: 16, color: deepPurple),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        Text(
-                          "${store['distance'].toStringAsFixed(1)} km",
-                          style: GoogleFonts.poppins(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      store['address'],
-                      style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 11),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(text: "Open", style: GoogleFonts.poppins(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
-                              TextSpan(text: " | Closes ${store['closeTime']}", style: GoogleFonts.poppins(color: Colors.grey[700], fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => _launchMapsUrl(store['url']),
-                          child: Text(
-                            "Get Direction",
-                            style: GoogleFonts.poppins(decoration: TextDecoration.underline, fontSize: 12, color: Colors.blue),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Navigate to MenuPage with the selected store name
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MenuPage(selectedStore: store['name']),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: deepPurple,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: Text("Select This Store", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                       ),
+                      Text(
+                        "${store['distance'].toStringAsFixed(1)} km",
+                        style: GoogleFonts.poppins(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    store['address'],
+                    style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 10),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Closes ${store['closeTime']}", style: GoogleFonts.poppins(color: Colors.grey[700], fontSize: 11)),
+                      InkWell(
+                        onTap: () => _launchMapsUrl(store['url']),
+                        child: Text("Get Directions", style: GoogleFonts.poppins(decoration: TextDecoration.underline, fontSize: 11, color: Colors.blue, fontWeight: FontWeight.w600)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(colors: [deepPurple, const Color(0xFF5A3691)]),
                     ),
-                  ],
-                ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => MenuPage(selectedStore: store['name'])));
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: Text("Select This Store", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
