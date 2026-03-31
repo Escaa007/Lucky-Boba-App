@@ -158,9 +158,16 @@ class _LoginPageState extends State<LoginPage>
     setState(() => _loading = true);
     try {
       final response = await http.post(
-        Uri.parse('${AppConfig.apiUrl}/login'),
-        headers: {'Content-Type': 'application/json'},
-        body:    jsonEncode({'email': email, 'password': password}),
+        Uri.parse('${AppConfig.apiUrl}/login'),  // ← was /register
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept':       'application/json',
+        },
+        body: jsonEncode({
+          'email':    email,
+          'password': password,
+          // ← REMOVED 'name': name (doesn't exist + login doesn't need it)
+        }),
       ).timeout(const Duration(seconds: 10));
 
       if (!mounted) return;
