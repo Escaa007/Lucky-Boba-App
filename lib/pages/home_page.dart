@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import '../config/app_config.dart';
 import '../cart/menu_page.dart';
+import 'points_page.dart';
 
 const List<String> _kPerkNames = [
   'Buy 1, Get 1 Free',
@@ -153,26 +154,28 @@ class _HomePageState extends State<HomePage> {
 
   // ── 2. Lucky Points ───────────────────────────────────────────────────────
   Future<void> _fetchLuckyPoints() async {
-    final prefs       = await SharedPreferences.getInstance();
-    final int? userId = prefs.getInt('user_id');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('session_token') ?? '';
 
-    if (userId == null) {
+    if (token.isEmpty) {
       if (mounted) setState(() => _loadingPoints = false);
       return;
     }
 
     try {
       final response = await http.get(
-        Uri.parse('${AppConfig.apiUrl}/points/$userId'),
+        Uri.parse('${AppConfig.apiUrl}/points'),  // ← no userId in URL
+        headers: {
+          'Accept':        'application/json',
+          'Authorization': 'Bearer $token',       // ← auth token instead
+        },
       ).timeout(const Duration(seconds: 8));
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        final data   = jsonDecode(response.body);
-        // Accept either { "points": 120 } or { "lucky_points": 120 } or { "data": { "points": 120 } }
-        final dynamic raw =
-            data['points'] ?? data['lucky_points'] ?? data['data']?['points'] ?? 0;
+        final data = jsonDecode(response.body);
+        final dynamic raw = data['points'] ?? 0;
         final int pts = raw is int ? raw : int.tryParse(raw.toString()) ?? 0;
         if (mounted) setState(() => _luckyPoints = pts);
       }
@@ -311,7 +314,12 @@ class _HomePageState extends State<HomePage> {
                       icon:      Icons.star_rounded,
                       iconColor: _orange,
                       badge:     null,
-                      onTap:     null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PointsPage(points: _luckyPoints),
+                        ),
+                      ).then((_) => _fetchLuckyPoints()),
                     ),
                   ),
                   const SizedBox(width: 10),
