@@ -45,6 +45,7 @@ jobs:
       - name: Build APK
         run: |
           flutter build apk --release \
+            --target=lib/auth/main.dart \
             --dart-define=APP_ENV=${{ steps.env.outputs.value }}
 
       - name: Upload APK Artifact
@@ -78,6 +79,7 @@ jobs:
       - name: Build APK (Production)
         run: |
           flutter build apk --release \
+            --target=lib/auth/main.dart \
             --dart-define=APP_ENV=production
 
       - name: Create GitHub Release with APK
@@ -116,6 +118,7 @@ jobs:
       - name: Build APK (Staging)
         run: |
           flutter build apk --release \
+            --target=lib/auth/main.dart \
             --dart-define=APP_ENV=staging
 
       - name: Upload Staging APK as Artifact
