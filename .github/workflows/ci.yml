@@ -31,7 +31,7 @@ jobs:
       - name: Run Tests
         run: flutter test --no-pub || echo "No tests found, skipping..."
 
-      - name: Set APP_ENV
+      - name: Set APP_ENV and sanitize branch name
         id: env
         run: |
           if [ "${{ github.ref }}" == "refs/heads/main" ]; then
@@ -41,6 +41,9 @@ jobs:
           else
             echo "value=development" >> $GITHUB_OUTPUT
           fi
+          # Sanitize branch name — replace / with - for artifact naming
+          SAFE_BRANCH=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          echo "branch=$SAFE_BRANCH" >> $GITHUB_OUTPUT
 
       - name: Build APK
         run: |
@@ -51,7 +54,7 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lucky-boba-${{ github.ref_name }}-apk
+          name: lucky-boba-${{ steps.env.outputs.branch }}-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 7
 
