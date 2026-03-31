@@ -65,6 +65,8 @@ jobs:
     needs: flutter-build
     if: github.ref == 'refs/heads/main'
     environment: production
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4.2.2
 
