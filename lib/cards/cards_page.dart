@@ -30,11 +30,18 @@ class CardModel {
   factory CardModel.fromJson(Map<String, dynamic> json) {
     List<int>? months;
     final raw = json['available_months'];
-    if (raw != null && raw.toString().isNotEmpty) {
-      months = raw.toString()
-          .split(',')
-          .map((e) => int.tryParse(e.trim()) ?? 0)
-          .toList();
+    if (raw != null && raw.toString().isNotEmpty && raw.toString() != 'null') {
+      try {
+        final List<dynamic> decoded = jsonDecode(raw.toString());
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        months = decoded.map((e) => monthNames.indexOf(e.toString()) + 1).where((m) => m > 0).toList();
+      } catch (_) {
+        months = raw.toString()
+            .split(',')
+            .map((e) => int.tryParse(e.trim()) ?? 0)
+            .where((m) => m > 0)
+            .toList();
+      }
     }
     final double priceRaw =
     (json['price_raw'] ?? json['price'] ?? 0).toDouble();
