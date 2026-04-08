@@ -94,9 +94,18 @@ class _CardPurchasePageState extends State<CardPurchasePage>
   Future<void> _fetchPaymentSettings() async {
     if (mounted) setState(() => _loadingPaymentSettings = true);
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final int? selectedBranchId = prefs.getInt('selected_branch_id');
+      
+      String url = '${AppConfig.apiUrl}/payment-settings';
+      if (selectedBranchId != null) {
+        url += '?branch_id=$selectedBranchId';
+      }
+
       final response = await http.get(
-        Uri.parse('${AppConfig.apiUrl}/payment-settings'),
+        Uri.parse(url),
       ).timeout(const Duration(seconds: 8));
+      
       if (!mounted) return;
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

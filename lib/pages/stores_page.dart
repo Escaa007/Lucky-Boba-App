@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'dart:math' as math;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../cart/menu_page.dart';
 
 class StoresPage extends StatefulWidget {
@@ -613,7 +614,14 @@ class _StoresPageState extends State<StoresPage> {
                       ),
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        if (branchId != null) {
+                          await prefs.setInt('selected_branch_id', branchId);
+                          await prefs.setString('selected_branch_name', store['name'] as String);
+                        }
+
+                        if (!mounted) return;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
