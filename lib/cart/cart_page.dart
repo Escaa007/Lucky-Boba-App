@@ -1,6 +1,7 @@
 // FILE: lib/pages/cart_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'checkout_page.dart';
 
 // ── Global cart state ────────────────────────────────────────────────────────
@@ -351,12 +352,13 @@ class _CartPageState extends State<CartPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: image != null && image.isNotEmpty
-                ? Image.network(
-              image,
+                ? CachedNetworkImage(
+              imageUrl: image,
               width:  76,
               height: 76,
               fit:    BoxFit.cover,
-              errorBuilder: (_, _, _) => _imagePlaceholder(),
+              placeholder: (context, url) => _imagePlaceholder(),
+              errorWidget: (context, url, error) => _imagePlaceholder(),
             )
                 : _imagePlaceholder(),
           ),

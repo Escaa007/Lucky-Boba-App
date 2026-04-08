@@ -7,6 +7,8 @@
   import 'item_customization_page.dart';
   import 'cart_page.dart';
   import '../config/app_config.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
   
   class MenuPage extends StatefulWidget {
     final String? selectedStore;
@@ -314,8 +316,7 @@
               // ── MENU GRID ──────────────────────────────────────────────────
               Expanded(
                 child: _isLoading
-                    ? const Center(
-                    child: CircularProgressIndicator(color: _purple))
+                    ? _buildMenuSkeleton()
                     : groupedItems.isEmpty
                     ? Center(
                   child: Column(
@@ -338,7 +339,7 @@
                   backgroundColor: Colors.white,
                   child: GridView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    cacheExtent: 300,
+                    cacheExtent: 1500,
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
                     gridDelegate:
                     const SliverGridDelegateWithFixedCrossAxisCount(
@@ -432,9 +433,13 @@
                   borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(18)),
                   child: imageUrl != null && imageUrl.isNotEmpty
-                      ? _SafeNetworkImage(
-                      url:         imageUrl,
-                      placeholder: _buildPlaceholderImage())
+                      ? CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => _buildShimmerPlaceholder(),
+                          errorWidget: (context, url, error) => _buildShimmerPlaceholder(),
+                        )
                       : _buildPlaceholderImage(),
                 ),
               ),
@@ -505,74 +510,112 @@
         ),
       );
     }
-  }
-  
-  // ── Safe network image ─────────────────────────────────────────────────────
-  class _SafeNetworkImage extends StatefulWidget {
-    final String url;
-    final Widget placeholder;
-    static const int maxRetries = 3;
-  
-    const _SafeNetworkImage({
-      required this.url,
-      required this.placeholder,
-    });
-  
-    @override
-    State<_SafeNetworkImage> createState() => _SafeNetworkImageState();
-  }
-  
-  class _SafeNetworkImageState extends State<_SafeNetworkImage> {
-    int  _attempt = 0;
-    bool _failed  = false;
-    bool _ready   = false;
-    late Key _imageKey;
-  
-    @override
-    void initState() {
-      super.initState();
-      _imageKey = UniqueKey();
-      final delay =
-      Duration(milliseconds: (widget.url.hashCode.abs() % 3000) + 500);
-      Future.delayed(delay, () {
-        if (mounted) setState(() => _ready = true);
-      });
+
+    Widget _buildShimmerPlaceholder() {
+      return Shimmer.fromColors(
+        baseColor: const Color(0xFFF2EEF8),
+        highlightColor: Colors.white,
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.white,
+        ),
+      );
     }
-  
-    void _retry() {
-      if (!mounted) return;
-      if (_attempt >= _SafeNetworkImage.maxRetries) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _failed = true);
-        });
-        return;
-      }
-      Future.delayed(Duration(seconds: _attempt + 1), () {
-        if (mounted) {
-          setState(() {
-            _attempt++;
-            _failed   = false;
-            _imageKey = UniqueKey();
-          });
-        }
-      });
+
+    Widget _buildMenuSkeleton() {
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 0.72,
+        ),
+        itemCount: 6,
+        itemBuilder: (context, index) => _buildItemSkeleton(),
+      );
     }
-  
-    @override
-    Widget build(BuildContext context) {
-      if (_failed) return widget.placeholder;
-      if (!_ready) return widget.placeholder;
-  
-      return Image.network(
-        widget.url,
-        key:   _imageKey,
-        width: double.infinity,
-        fit:   BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('❌ [Image] Failed to load: ${widget.url}');
-          _retry();
-          return widget.placeholder;
-        },
+
+    Widget _buildItemSkeleton() {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFEAEAF0), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Shimmer.fromColors(
+                baseColor: const Color(0xFFF2EEF8),
+                highlightColor: Colors.white,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Shimmer.fromColors(
+                      baseColor: const Color(0xFFF2EEF8),
+                      highlightColor: Colors.white,
+                      child: Container(
+                        width: 100,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Shimmer.fromColors(
+                          baseColor: const Color(0xFFF2EEF8),
+                          highlightColor: Colors.white,
+                          child: Container(
+                            width: 60,
+                            height: 16,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        Shimmer.fromColors(
+                          baseColor: const Color(0xFFF2EEF8),
+                          highlightColor: Colors.white,
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
   }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -522,12 +523,17 @@ class _CardPurchasePageState extends State<CardPurchasePage>
                             ? Transform(alignment: Alignment.center, transform: Matrix4.rotationY(math.pi),
                             child: Image.asset('assets/cards/back_card.png', fit: BoxFit.cover))
                             : (widget.cardImageUrl.startsWith('http')
-                            ? Image.network(widget.cardImageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Container(
-                                color: const Color(0xFFF2EEF8),
-                                child: const Icon(Icons.credit_card_rounded,
-                                    color: Color(0xFF7C14D4), size: 48)))
+                            ? CachedNetworkImage(
+                                imageUrl: widget.cardImageUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => Container(
+                                    color: const Color(0xFFF2EEF8),
+                                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2))),
+                                errorWidget: (context, url, error) => Container(
+                                    color: const Color(0xFFF2EEF8),
+                                    child: const Icon(Icons.credit_card_rounded,
+                                        color: Color(0xFF7C14D4), size: 48)),
+                              )
                             : Image.asset(widget.cardImageUrl, fit: BoxFit.cover)),
                       );
                     },
@@ -831,14 +837,12 @@ class _QrPaymentSheetState extends State<_QrPaymentSheet> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: widget.qrUrl != null
-                        ? Image.network(
-                      widget.qrUrl!,
+                        ? CachedNetworkImage(
+                      imageUrl: widget.qrUrl!,
                       fit: BoxFit.contain,
-                      loadingBuilder: (_, child, progress) => progress == null
-                          ? child
-                          : Center(child: CircularProgressIndicator(
+                      placeholder: (context, url) => Center(child: CircularProgressIndicator(
                           color: widget.color, strokeWidth: 2)),
-                      errorBuilder: (_, _, _) => _qrFallback(),
+                      errorWidget: (context, url, error) => _qrFallback(),
                     )
                         : Image.asset(widget.qrAssetFallback, fit: BoxFit.contain,
                         errorBuilder: (_, _, _) => _qrFallback()),

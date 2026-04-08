@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'cart_page.dart';
 import '../config/app_config.dart'; // Make sure this path is correct for your app!
 
@@ -321,7 +322,12 @@ class _ItemCustomizationPageState extends State<ItemCustomizationPage> {
                         border: Border(bottom: BorderSide(color: Color(0xFFEAEAF0), width: 1)),
                       ),
                       child: imageUrl != null && imageUrl.isNotEmpty
-                          ? Image.network(imageUrl, fit: BoxFit.contain, errorBuilder: (_, _, _) => _placeholder())
+                          ? CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.contain,
+                              placeholder: (context, url) => _placeholder(),
+                              errorWidget: (context, url, error) => _placeholder(),
+                            )
                           : _placeholder(),
                     ),
 
