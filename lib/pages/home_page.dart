@@ -833,16 +833,16 @@ class _BranchPickerSheetState extends State<_BranchPickerSheet> {
                     dist:      dist,
                     isNearest: i == 0,
                     onTap: () async {
+                      final navigator = Navigator.of(context);
                       final prefs = await SharedPreferences.getInstance();
                       if (store['branch_id'] != null) {
                         await prefs.setInt('selected_branch_id', store['branch_id'] as int);
                         await prefs.setString('selected_branch_name', store['name'] as String);
                       }
                       
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
+                      if (!mounted) return;
+                      navigator.pop();
+                      navigator.push(
                         MaterialPageRoute(
                           builder: (_) => MenuPage(
                             selectedStore:   store['name'],

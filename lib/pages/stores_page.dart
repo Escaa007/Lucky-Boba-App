@@ -615,15 +615,15 @@ class _StoresPageState extends State<StoresPage> {
                     ),
                     child: ElevatedButton(
                       onPressed: () async {
+                        final navigator = Navigator.of(context);
                         final prefs = await SharedPreferences.getInstance();
                         if (branchId != null) {
                           await prefs.setInt('selected_branch_id', branchId);
                           await prefs.setString('selected_branch_name', store['name'] as String);
                         }
-
-                        if (!context.mounted) return;
-                        Navigator.push(
-                          context,
+                        
+                        if (!mounted) return;
+                        navigator.push(
                           MaterialPageRoute(
                             builder: (_) => MenuPage(
                               selectedStore: store['name'],
