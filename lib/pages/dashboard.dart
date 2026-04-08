@@ -1,4 +1,4 @@
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -69,32 +69,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // ── PREMIUM BACKGROUND ──────────────────────────────────────────
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/prompt_image.png',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppTheme.primary.withValues(alpha: 0.15),
-                      Colors.black.withValues(alpha: 0.8),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ── PAGE CONTENT ────────────────────────────────────────────────
+          // ── PAGE CONTENT (fills full screen, pages handle their own bg) ──
           Column(
             children: [
               if (showHeader) _buildCleanHeader(),
@@ -116,65 +91,72 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildCleanHeader() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _getTodayLabel().toUpperCase(),
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white54,
-                    letterSpacing: 2,
-                  ),
-                ),
-                Text(
-                  'Hello, $_userName',
-                  style: GoogleFonts.outfit(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              ).then((_) => _loadUserData()),
-              child: ValueListenableBuilder<String?>(
-                valueListenable: profileImageNotifier,
-                builder: (context, imagePath, _) {
-                  final hasImage = imagePath != null && File(imagePath).existsSync();
-                  return Container(
-                    height: 48, width: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white24, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primary.withValues(alpha: 0.2),
-                          blurRadius: 15,
-                        ),
-                      ],
+    return Container(
+      // Solid dark-purple header — no giant blurred image behind it
+      decoration: BoxDecoration(
+        color: AppTheme.primary,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Left: greeting
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getTodayLabel().toUpperCase(),
+                    style: GoogleFonts.outfit(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white54,
+                      letterSpacing: 2,
                     ),
-                    child: ClipOval(
-                      child: hasImage
-                          ? Image.file(File(imagePath), fit: BoxFit.cover)
-                          : const Icon(PhosphorIconsRegular.user, color: Colors.white70, size: 24),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Hello, $_userName 👋',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
-            ),
-          ],
+
+              // Right: avatar
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
+                ).then((_) => _loadUserData()),
+                child: ValueListenableBuilder<String?>(
+                  valueListenable: profileImageNotifier,
+                  builder: (context, imagePath, _) {
+                    final hasImage = imagePath != null && File(imagePath).existsSync();
+                    return Container(
+                      height: 42, width: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white30, width: 2),
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                      child: ClipOval(
+                        child: hasImage
+                            ? Image.file(File(imagePath), fit: BoxFit.cover)
+                            : const Icon(PhosphorIconsRegular.user, color: Colors.white70, size: 22),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -182,8 +164,9 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String _getTodayLabel() {
     final now = DateTime.now();
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const days   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${days[now.weekday - 1]} • ${months[now.month - 1]} ${now.day}';
   }
 }

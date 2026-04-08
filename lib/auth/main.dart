@@ -18,6 +18,7 @@ import 'signup.dart';
 import 'terms_conditions.dart';
 import 'landing_promo_page.dart';
 import 'onboarding_page.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -182,7 +183,7 @@ class _LoginPageState extends State<LoginPage>
         Uri.parse('${AppConfig.apiUrl}/google-login'),
         headers: {'Content-Type': 'application/json'},
         body:    jsonEncode({'name': googleUser.displayName ?? 'Guest', 'email': googleUser.email}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
       if (!mounted) return;
       setState(() => _googleLoading = false);
       if (response.statusCode == 200) {
